@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📊 젠트라 데이터 분석기</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --line:#d8dee9;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --accent:#1b5e20;
+      --accent2:#0f766e;
+      --danger:#b91c1c;
+      --shadow:0 10px 30px rgba(17,24,39,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#f8fafc 0%, #eef3f8 100%);
+      color:var(--text);
+      font-family:Arial, Helvetica, sans-serif;
+    }
+    header{
+      padding:28px 22px 10px;
+      max-width:1600px;
+      margin:0 auto;
+    }
+    h1{margin:0 0 8px;font-size:28px}
+    .sub{color:var(--muted);font-size:14px;line-height:1.5}
+    .wrap{
+      max-width:1600px;
+      margin:0 auto;
+      padding:12px 22px 30px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 1280px){
+      .grid{grid-template-columns:1fr}
+    }
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel-head{
+      padding:16px 16px 14px;
+      background:linear-gradient(135deg, #f8fbff 0%, #eef7ef 100%);
+      border-bottom:1px solid var(--line);
+    }
+    .panel-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin:0;
+      font-size:18px;
+    }
+    .badge{
+      font-size:12px;
+      color:#fff;
+      background:var(--accent);
+      padding:5px 10px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+    .panel-body{padding:16px}
+    .section{
+      margin-bottom:16px;
+      padding:14px;
+      border:1px solid #edf0f4;
+      background:#fbfcfe;
+      border-radius:14px;
+    }
+    .section h3{
+      margin:0 0 10px;
+      font-size:15px;
+    }
+    .field{
+      margin-bottom:10px;
+    }
+    .field label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    input[type="file"],
+    input[type="text"],
+    input[type="datetime-local"]{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      font-size:14px;
+      outline:none;
+    }
+    input[type="datetime-local"]{padding:9px 10px}
+    .name-row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .name-row input{flex:1;min-width:0}
+    .btnrow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .action-bar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:2px 0 14px;
+    }
+    button{
+      border:0;
+      border-radius:12px;
+      padding:9px 12px;
+      cursor:pointer;
+      font-size:13px;
+      background:#e5e7eb;
+      color:#111827;
+      transition:.15s ease;
+    }
+    button:hover{transform:translateY(-1px)}
+    .primary{background:var(--accent); color:#fff}
+    .teal{background:var(--accent2); color:#fff}
+    .danger{background:var(--danger); color:#fff}
+    .ghost{background:#f3f4f6}
+    .active{
+      background:var(--accent) !important;
+      color:#fff !important;
+    }
+    .meta{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      font-size:13px;
+    }
+    .meta .box{
+      padding:10px 12px;
+      border-radius:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      min-height:62px;
+    }
+    .meta .box b{display:block;margin-bottom:5px}
+    .tiny{font-size:12px;color:var(--muted);line-height:1.45}
+    .status{
+      font-size:13px;
+      color:var(--muted);
+      background:#fff;
+      border:1px dashed var(--line);
+      padding:10px 12px;
+      border-radius:12px;
+      white-space:pre-wrap;
+      line-height:1.5;
+    }
+    .analysis-block{
+      margin-top:14px;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+    .analysis-block h4{margin:0 0 8px;font-size:14px}
+    .chartbox{
+      position:relative;
+      height:200px;
+      width:100%;
+    }
+    .chartbox canvas{
+      width:100% !important;
+      height:100% !important;
+      max-width:100%;
+    }
+    .tablewrap{
+      overflow:auto;
+      max-height:360px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+    }
+    table{
+      border-collapse:collapse;
+      width:100%;
+      font-size:12px;
+    }
+    th,td{
+      border:1px solid #e5e7eb;
+      padding:6px 8px;
+      text-align:left;
+      vertical-align:top;
+      white-space:nowrap;
+    }
+    th{
+      position:sticky;
+      top:0;
+      background:#f8fafc;
+      z-index:1;
+    }
+    .collapse{display:none}
+    .divider{
+      height:1px;
+      background:#edf0f4;
+      margin:12px 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 젠트라 데이터 분석기</h1>
+    <div class="sub">
+      주의 - 경향성 파악용으로만 사용해주세요.
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid" id="app"></div>
+
+    <div class="action-bar" style="justify-content:center; margin:18px 0 10px;">
+      <button class="primary" id="globalRunBtn">종합 분석기</button>
+    </div>
+
+    <section class="panel" id="global-panel">
+      <div class="panel-head">
+        <h2 class="panel-title">
+          <span>종합 분석기</span>
+          <span class="badge">전체 결합</span>
+        </h2>
+      </div>
+      <div class="panel-body">
+        <div class="section">
+          <h3>전체 요약</h3>
+          <div id="globalSummary" class="status">아직 종합 분석 전입니다.</div>
+        </div>
+
+        <div class="analysis-block">
+          <h4>종합 그래프</h4>
+          <div class="chartbox">
+            <canvas id="globalTrendChart"></canvas>
+          </div>
+          <div style="margin-top:10px">
+            <div class="tiny" style="margin-bottom:8px"><b>x축 표시 설정</b></div>
+            <div class="btnrow">
+              <button class="ghost" id="globalTimeYear">년도</button>
+              <button class="ghost" id="globalTimeMonth">월</button>
+              <button class="ghost" id="globalTimeDay">일</button>
+              <button class="ghost" id="globalTimeHour">시간</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="analysis-block">
+          <h4>변수 간 상관분석</h4>
+          <div id="globalCorrelation" class="status">아직 종합 분석 전입니다.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="section" style="margin-top:16px">
+      <h3>종합분석기 다운로드</h3>
+      <div class="tiny">이미지 다운은 현재 존재하는 그래프만 모아서 ZIP 파일로 내려받습니다.</div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="ghost" id="globalDownloadImages">이미지 다운</button>
+        <button class="ghost" id="globalDownloadPdf">분석 결과 다운(pdf)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pdfReport" style="position:fixed;left:-10000px;top:0;width:900px;background:#fff;color:#111;padding:24px;font-family:Arial, Helvetica, sans-serif;"></div>
+
+<script>
+const app = document.getElementById('app');
+const pastel = ['#ffd9d9','#ffe9cc','#fff4cc','#e4f7d2','#d8f5e8','#d9f0ff','#e3e0ff','#f3d9ff'];
+const states = {};
+const charts = {};
+let globalTimeMode = 'year';
+
+function createState(idx){
+  states[idx] = {
+    rawData: [],
+    colInfo: [],
+    selectedPorts: new Set(),
+    selectedTopics: new Set(),
+    timeMode: 'year',
+    currentTableData: [],
+    portColors: {}
+  };
+}
+
+function getState(idx){ return states[idx]; }
+
+function clean(v){
+  return String(v ?? '').trim();
+}
+
+function getColor(idx, port){
+  const s = getState(idx);
+  if(!s.portColors[port]){
+    const keys = Object.keys(s.portColors);
+    s.portColors[port] = pastel[keys.length % pastel.length];
+  }
+  return s.portColors[port];
+}
+
+function excelDateToLabel(v){
+  let d;
+  if(typeof v === 'number'){
+    const utc = Math.round((v - 25569) * 86400 * 1000);
+    d = new Date(utc - (9 * 60 * 60 * 1000));
+  } else {
+    d = new Date(v);
+  }
+  if(isNaN(d)) return clean(v);
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  let hour = d.getHours();
+  const ampm = hour >= 12 ? '오후' : '오전';
+  hour = hour % 12;
+  if(hour === 0) hour = 12;
+  hour = String(hour).padStart(2,'0');
+  const min = String(d.getMinutes()).padStart(2,'0');
+  const sec = String(d.getSeconds()).padStart(2,'0');
+  return `${year}-${month}-${day}-${hour}시-${min}분-${sec}초 (${ampm})`;
+}
+
+function parseLabelToDate(label){
+  const m = String(label).match(/(\d+)-(\d+)-(\d+)-(\d+)시-(\d+)분-(\d+)초 \((오전|오후)\)/);
+  if(!m) return null;
+  let hour = parseInt(m[4], 10);
+  if(m[7] === '오후' && hour < 12) hour += 12;
+  if(m[7] === '오전' && hour === 12) hour = 0;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), hour, Number(m[5]), Number(m[6]));
+}
+
+function fmtTick(label, mode){
+  const m = String(label).match(/(\d+)-(\d+)-(\d+)-(\d+)시-(\d+)분-(\d+)초 \((오전|오후)\)/);
+  if(!m) return label;
+  if(mode === 'year') return m[1];
+  if(mode === 'month') return `${m[1]}-${m[2]}`;
+  if(mode === 'day') return `${m[2]}-${m[3]}`;
+  if(mode === 'hour') return `${m[4]}:${m[5]}`;
+  return label;
+}
+
+function parseExcel(sheet){
+  const data = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'' });
+  const portRow = data[0] || [];
+  const deviceRow = data[1] || [];
+  const topicRow = data[2] || [];
+  const merges = sheet['!merges'] || [];
+  const portBlocks = [];
+
+  merges.forEach(m => {
+    if(m.s.r === 0){
+      portBlocks.push({
+        port: clean(portRow[m.s.c]),
+        device: clean(deviceRow[m.s.c]),
+        start: m.s.c,
+        end: m.e.c
+      });
+    }
+  });
+
+  for(let c = 1; c < portRow.length; c++){
+    if(portRow[c] && !portBlocks.some(b => c >= b.start && c <= b.end)){
+      portBlocks.push({
+        port: clean(portRow[c]),
+        device: clean(deviceRow[c]),
+        start: c,
+        end: c
+      });
+    }
+  }
+
+  const colInfo = [];
+  portBlocks.forEach(b => {
+    for(let c = b.start; c <= b.end; c++){
+      colInfo.push({
+        col: c,
+        port: b.port,
+        device: b.device,
+        topic: clean(topicRow[c])
+      });
+    }
+  });
+
+  const result = [];
+  for(let r = 4; r < data.length; r++){
+    const date = excelDateToLabel(data[r]?.[0]);
+    if(!date) continue;
+    colInfo.forEach(c => {
+      result.push({
+        날짜: date,
+        포트: c.port,
+        장비: c.device,
+        주제: c.topic,
+        값: Number(data[r][c.col]) || 0
+      });
+    });
+  }
+
+  return { colInfo, result };
+}
+
+function uniqueDates(rawData){
+  const list = [];
+  rawData.forEach(d => {
+    if(d.날짜 && !list.includes(d.날짜)) list.push(d.날짜);
+  });
+  return list;
+}
+
+function renderPanel(idx){
+  const accent = idx === 1 ? 'primary' : idx === 2 ? 'teal' : 'danger';
+  const html = `
+    <section class="panel" id="panel-${idx}">
+      <div class="panel-head">
+        <h2 class="panel-title">
+          <span>분석기 ${idx}</span>
+          <span class="badge">독립 상태</span>
+        </h2>
+      </div>
+      <div class="panel-body">
+        <div class="section">
+          <h3>1) 업로드</h3>
+          <div class="field">
+            <label>이름</label>
+            <div class="name-row">
+              <input type="text" id="userName-${idx}" placeholder="이름 입력">
+              <button class="ghost" id="nameConfirm-${idx}">확인</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>엑셀 파일</label>
+            <input type="file" id="fileInput-${idx}" accept=".xlsx,.xls">
+          </div>
+          <div class="btnrow">
+            <button class="${accent}" id="loadBtn-${idx}">불러오기</button>
+            <button class="ghost" id="resetBtn-${idx}">초기화</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>2) 기간</h3>
+          <div id="periodInfo-${idx}" class="status">파일을 업로드하면 기간이 표시됩니다.</div>
+          <div class="divider"></div>
+          <div class="tiny" style="margin:2px 0 10px;">자동으로 30분 단위로 조정</div>
+          <div class="field">
+            <label>시작</label>
+            <input type="datetime-local" id="startDate-${idx}" step="1800">
+          </div>
+          <div class="field">
+            <label>종료</label>
+            <input type="datetime-local" id="endDate-${idx}" step="1800">
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>3) 포트 / 주제</h3>
+          <div class="tiny">주제 버튼은 포트가 달라도 계속 보입니다.</div>
+          <div class="divider"></div>
+          <div class="field">
+            <label>포트</label>
+            <div id="ports-${idx}" class="btnrow"></div>
+          </div>
+          <div class="field">
+            <label>주제</label>
+            <div id="topics-${idx}" class="btnrow"></div>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="${accent}" id="runBtn-${idx}">분석</button>
+          <button class="ghost" id="resetBtn2-${idx}">초기화</button>
+        </div>
+
+        <div class="section">
+          <h3 id="execTitle-${idx}">이름없음</h3>
+          <div class="divider"></div>
+          <div id="deviceInfo-${idx}" class="meta"></div>
+        </div>
+
+        <div class="analysis-block">
+          <h4>그래프</h4>
+          <div class="chartbox">
+            <canvas id="trendChart-${idx}"></canvas>
+          </div>
+          <div style="margin-top:10px">
+            <div class="tiny" style="margin-bottom:8px"><b>x축 표시 설정</b></div>
+            <div class="btnrow">
+              <button class="ghost" id="timeYear-${idx}">년도</button>
+              <button class="ghost" id="timeMonth-${idx}">월</button>
+              <button class="ghost" id="timeDay-${idx}">일</button>
+              <button class="ghost" id="timeHour-${idx}">시간</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="analysis-block">
+          <h4>종합 분석</h4>
+          <button class="ghost" id="toggleInsight-${idx}">결과 보기 / 숨기기</button>
+          <div id="insight-${idx}" class="status collapse" style="margin-top:10px"></div>
+        </div>
+
+        <div class="analysis-block">
+          <h4>표</h4>
+          <button class="ghost" id="toggleTable-${idx}">값보기 / 숨기기</button>
+          <div id="tableDetail-${idx}" class="collapse" style="margin-top:10px">
+            <div class="btnrow" id="tableBtns-${idx}" style="margin-bottom:10px"></div>
+            <div id="topicTableArea-${idx}" class="tablewrap"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+  app.insertAdjacentHTML('beforeend', html);
+}
+
+function setActiveButtons(idx){
+  const s = getState(idx);
+  document.querySelectorAll(`#ports-${idx} button`).forEach(btn => {
+    btn.classList.toggle('active', s.selectedPorts.has(clean(btn.dataset.value)));
+  });
+  document.querySelectorAll(`#topics-${idx} button`).forEach(btn => {
+    btn.classList.toggle('active', s.selectedTopics.has(clean(btn.dataset.value)));
+  });
+}
+
+function renderPorts(idx){
+  const s = getState(idx);
+  const ports = [...new Set(s.colInfo.map(x => clean(x.port)))].filter(Boolean);
+  const holder = document.getElementById(`ports-${idx}`);
+  holder.innerHTML = ports.map(p => `
+    <button style="background:${getColor(idx,p)}" data-value="${p}">${p}</button>
+  `).join('');
+  holder.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => togglePort(idx, btn.dataset.value));
+  });
+  setActiveButtons(idx);
+}
+
+function renderTopics(idx){
+  const s = getState(idx);
+  const map = new Map();
+  s.colInfo.forEach(x => {
+    const key = clean(x.port) + '||' + clean(x.topic);
+    if(!map.has(key)) map.set(key, { port: clean(x.port), topic: clean(x.topic) });
+  });
+  const topics = [...map.values()];
+  const holder = document.getElementById(`topics-${idx}`);
+  holder.innerHTML = topics.map(t => `
+    <button style="background:${getColor(idx,t.port)}" data-value="${t.port}||${t.topic}">${t.topic || '(빈 주제)'}</button>
+  `).join('');
+  holder.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => toggleTopic(idx, btn.dataset.value));
+  });
+  setActiveButtons(idx);
+}
+
+function togglePort(idx, port){
+  const s = getState(idx);
+  port = clean(port);
+  if(s.selectedPorts.has(port)){
+    s.selectedPorts.delete(port);
+    [...s.selectedTopics].forEach(v => {
+      if(v.startsWith(port + '||')) s.selectedTopics.delete(v);
+    });
+  } else {
+    s.selectedPorts.add(port);
+  }
+  renderPorts(idx);
+  renderTopics(idx);
+}
+
+function toggleTopic(idx, topicKey){
+  const s = getState(idx);
+  topicKey = clean(topicKey);
+  const port = topicKey.split('||')[0];
+  if(s.selectedTopics.has(topicKey)){
+    s.selectedTopics.delete(topicKey);
+    if([...s.selectedTopics].every(v => !v.startsWith(port + '||'))){
+      s.selectedPorts.delete(port);
+    }
+  } else {
+    s.selectedTopics.add(topicKey);
+    s.selectedPorts.add(port);
+  }
+  renderPorts(idx);
+  renderTopics(idx);
+}
+
+function updatePeriod(idx){
+  const s = getState(idx);
+  const el = document.getElementById(`periodInfo-${idx}`);
+  if(!s.rawData.length){
+    el.textContent = '파일을 업로드하면 기간이 표시됩니다.';
+    return;
+  }
+  const dates = uniqueDates(s.rawData);
+  if(!dates.length){
+    el.textContent = '기간 정보를 찾지 못했습니다.';
+    return;
+  }
+  el.textContent = `${dates[0]} ~ ${dates[dates.length - 1]}`;
+}
+
+function setDateLimit(idx){
+  const s = getState(idx);
+  const dates = uniqueDates(s.rawData);
+  if(!dates.length) return;
+  const first = parseLabelToDate(dates[0]);
+  const last = parseLabelToDate(dates[dates.length - 1]);
+  if(!first || !last) return;
+
+  const toInput = d => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  };
+
+  const startEl = document.getElementById(`startDate-${idx}`);
+  const endEl = document.getElementById(`endDate-${idx}`);
+  startEl.min = toInput(first);
+  startEl.max = toInput(last);
+  endEl.min = toInput(first);
+  endEl.max = toInput(last);
+  if(!startEl.value) startEl.value = toInput(first);
+  if(!endEl.value) endEl.value = toInput(last);
+}
+
+function updateExecTitle(idx){
+  const name = document.getElementById(`userName-${idx}`).value.trim();
+  document.getElementById(`execTitle-${idx}`).textContent = name || '이름없음';
+}
+
+function renderDevice(idx, data){
+  const map = {};
+  data.forEach(d => {
+    if(!map[d.포트]) map[d.포트] = new Set();
+    map[d.포트].add(d.장비);
+  });
+  const box = document.getElementById(`deviceInfo-${idx}`);
+  if(!Object.keys(map).length){
+    box.innerHTML = '<div class="box">데이터 없음</div>';
+    return;
+  }
+  box.innerHTML = Object.keys(map).map(port => `
+    <div class="box"><b>${port}</b><span class="tiny">${[...map[port]].join(', ')}</span></div>
+  `).join('');
+}
+
+function renderTableArea(idx, data){
+  const area = document.getElementById(`topicTableArea-${idx}`);
+  if(!data.length){
+    area.innerHTML = '<div class="status">데이터 없음</div>';
+    return;
+  }
+  let html = '<table><tr>';
+  Object.keys(data[0]).forEach(k => html += `<th>${k}</th>`);
+  html += '</tr>';
+  data.forEach(r => {
+    html += '<tr>';
+    Object.values(r).forEach(v => html += `<td>${v}</td>`);
+    html += '</tr>';
+  });
+  html += '</table>';
+  area.innerHTML = html;
+}
+
+
+function getAnalyzerName(idx){
+  const raw = document.getElementById(`userName-${idx}`)?.value?.trim();
+  return raw || '이름없음';
+}
+
+function getSeriesLabel(idx, row){
+  return `${getAnalyzerName(idx)}-${row.포트}-${row.주제}`;
+}
+
+function buildCombinedSeries(){
+  const combined = [];
+  const included = [];
+  for(let idx = 1; idx <= 3; idx++){
+    const s = getState(idx);
+    if(!s.rawData.length || s.selectedPorts.size === 0 || s.selectedTopics.size === 0) continue;
+    const filtered = buildFilteredData(idx);
+    if(!filtered.length) continue;
+    included.push({ idx, name: getAnalyzerName(idx), count: filtered.length });
+    const groups = {};
+    filtered.forEach(d => {
+      const key = getSeriesLabel(idx, d);
+      if(!groups[key]) groups[key] = [];
+      groups[key].push({ x: d.날짜, y: d.값 });
+    });
+    Object.keys(groups).forEach(key => {
+      combined.push({
+        label: key,
+        points: groups[key]
+      });
+    });
+  }
+  return { combined, included };
+}
+
+function alignSeriesByDate(seriesA, seriesB){
+  const mapA = new Map(seriesA.points.map(p => [p.x, p.y]));
+  const mapB = new Map(seriesB.points.map(p => [p.x, p.y]));
+  const common = [...mapA.keys()].filter(k => mapB.has(k));
+  common.sort((a, b) => {
+    const da = parseLabelToDate(a);
+    const db = parseLabelToDate(b);
+    return (da?.getTime?.() || 0) - (db?.getTime?.() || 0);
+  });
+  const x = common.map(k => mapA.get(k));
+  const y = common.map(k => mapB.get(k));
+  return { x, y, common };
+}
+
+function computeCombinedCorrelation(combined){
+  const rel = [];
+  for(let i=0;i<combined.length;i++){
+    for(let j=i+1;j<combined.length;j++){
+      const { x, y, common } = alignSeriesByDate(combined[i], combined[j]);
+      if(common.length < 2) continue;
+      const r = computeCorrelation(x, y);
+      if(r !== null && Math.abs(r) >= 0.7){
+        rel.push({
+          a: combined[i].label,
+          b: combined[j].label,
+          r
+        });
+      }
+    }
+  }
+  rel.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+  return rel;
+}
+
+function drawCombinedTrend(combined){
+  const canvas = document.getElementById('globalTrendChart');
+  if(charts.global){
+    charts.global.destroy();
+    charts.global = null;
+  }
+  if(!combined.length){
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    return;
+  }
+  const labels = [...new Set(combined.flatMap(s => s.points.map(p => p.x)))];
+  labels.sort((a, b) => {
+    const da = parseLabelToDate(a);
+    const db = parseLabelToDate(b);
+    return (da?.getTime?.() || 0) - (db?.getTime?.() || 0);
+  });
+  const datasets = combined.map((s, i) => ({
+    label: s.label,
+    data: labels.map(l => {
+      const found = s.points.find(p => p.x === l);
+      return found ? found.y : null;
+    }),
+    borderWidth: 2,
+    tension: 0.25,
+    pointRadius: 2,
+    spanGaps: true
+  }));
+  charts.global = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom' }
+      },
+      scales: {
+        y: { beginAtZero: true },
+        x: {
+          ticks: {
+            callback: function(value){
+              const label = this.getLabelForValue(value);
+              return fmtTick(label, globalTimeMode);
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+function downloadCanvasPNG(canvasId, fileName){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return false;
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = fileName;
+  link.click();
+  return true;
+}
+
+function hasChartData(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return false;
+  const ctx = canvas.getContext('2d');
+  try{
+    const px = ctx.getImageData(0, 0, Math.min(10, canvas.width || 10), Math.min(10, canvas.height || 10)).data;
+    return Array.from(px).some(v => v !== 0);
+  }catch(e){
+    return false;
+  }
+}
+
+function getAnalyzerName(idx){
+  const name = document.getElementById(`userName-${idx}`).value.trim();
+  return name || '이름없음';
+}
+
+function buildPdfSectionForAnalyzer(idx){
+  const name = getAnalyzerName(idx);
+  const period = document.getElementById(`periodInfo-${idx}`).textContent.trim();
+  const deviceInfo = document.getElementById(`deviceInfo-${idx}`).innerHTML || '<div>장비 정보 없음</div>';
+  const outlier = document.getElementById(`outlier-${idx}`).innerHTML || '이상값 없음';
+  const insight = document.getElementById(`insight-${idx}`).innerHTML || '분석 결과 없음';
+  const chartImg = hasChartData(`trendChart-${idx}`) ? `<img class="report-img" src="${document.getElementById(`trendChart-${idx}`).toDataURL('image/png')}" />` : '<div class="report-empty">그래프 없음</div>';
+
+  return `
+    <div class="report-section">
+      <h2>분석기${idx} 이름: ${name}</h2>
+      <div class="report-sub">기간: ${period}</div>
+      <h3>장비</h3>
+      <div class="report-grid">${deviceInfo}</div>
+      <h3>그래프</h3>
+      ${chartImg}
+      <h3>이상탐지</h3>
+      <div class="report-box">${outlier}</div>
+      <h3>상관분석</h3>
+      <div class="report-box">${insight}</div>
+    </div>
+  `;
+}
+
+function buildGlobalPdfSection(){
+  const summary = document.getElementById('globalSummary').innerHTML || '종합 분석 전입니다.';
+  const correlation = document.getElementById('globalCorrelation').innerHTML || '상관 결과 없음';
+  const chartImg = hasChartData('globalTrendChart') ? `<img class="report-img" src="${document.getElementById('globalTrendChart').toDataURL('image/png')}" />` : '<div class="report-empty">종합 그래프 없음</div>';
+
+  return `
+    <div class="report-section">
+      <h2>종합분석</h2>
+      <div class="report-box">${summary}</div>
+      <h3>종합그래프</h3>
+      ${chartImg}
+      <h3>Pearson 결과</h3>
+      <div class="report-box">${correlation}</div>
+    </div>
+  `;
+}
+
+function buildPdfReportHtml(){
+  let html = `
+    <div class="report-title">젠트라 데이터 분석기</div>
+    <div class="report-note">분석기별 결과와 종합분석 결과를 함께 정리한 출력용 보고서입니다.</div>
+  `;
+  for(let i=1;i<=3;i++){
+    const s = getState(i);
+    if(!s.rawData.length) continue;
+    html += buildPdfSectionForAnalyzer(i);
+  }
+  html += buildGlobalPdfSection();
+  return html;
+}
+
+async function exportAnalysisPdf(){
+  if(typeof html2pdf === 'undefined'){
+    alert('PDF 라이브러리를 불러오지 못했습니다.');
+    return;
+  }
+  const report = document.getElementById('pdfReport');
+  report.innerHTML = buildPdfReportHtml();
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .report-title{font-size:28px;font-weight:700;margin-bottom:8px}
+    .report-note{font-size:13px;color:#666;margin-bottom:18px}
+    .report-section{page-break-inside:avoid;margin-bottom:26px;padding:18px;border:1px solid #ddd;border-radius:14px}
+    .report-section h2{margin:0 0 8px;font-size:22px}
+    .report-section h3{margin:16px 0 8px;font-size:16px}
+    .report-sub{font-size:13px;color:#555;margin-bottom:10px}
+    .report-box{font-size:12px;line-height:1.5;white-space:normal}
+    .report-grid{font-size:12px;line-height:1.5}
+    .report-img{width:100%;max-width:820px;border:1px solid #ddd;border-radius:10px;display:block}
+    .report-empty{font-size:13px;color:#666;padding:10px 0}
+  `;
+  report.appendChild(style);
+
+  await html2pdf().set({
+    margin: 8,
+    filename: '젠트라_데이터_분석기_결과.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'legacy'] }
+  }).from(report).save();
+
+  style.remove();
+}
+
+async function downloadAvailableCharts(){
+  const list = [
+    { id: 'trendChart-1', name: '분석기1_그래프.png' },
+    { id: 'trendChart-2', name: '분석기2_그래프.png' },
+    { id: 'trendChart-3', name: '분석기3_그래프.png' },
+    { id: 'globalTrendChart', name: '종합그래프.png' }
+  ];
+  const available = list.filter(item => document.getElementById(item.id) && hasChartData(item.id));
+
+  if(!available.length){
+    alert('다운로드할 그래프가 없습니다.');
+    return;
+  }
+
+  if(available.length === 1){
+    const item = available[0];
+    const canvas = document.getElementById(item.id);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = item.name;
+    a.click();
+    return;
+  }
+
+  if(typeof JSZip === 'undefined'){
+    alert('이미지 압축 도구를 불러오지 못했습니다.');
+    return;
+  }
+
+  const zip = new JSZip();
+  for(const item of available){
+    const canvas = document.getElementById(item.id);
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1];
+    zip.file(item.name, base64, { base64: true });
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '젠트라_그래프_이미지.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function runGlobalAnalysis(){
+  const { combined, included } = buildCombinedSeries();
+  const summary = document.getElementById('globalSummary');
+  const corr = document.getElementById('globalCorrelation');
+
+  if(!included.length){
+    summary.textContent = '종합 분석에 사용할 데이터가 없습니다. 각 분석기에서 파일 업로드와 포트/주제 선택을 먼저 해주세요.';
+    corr.textContent = '상관분석 결과가 없습니다.';
+    if(charts.global){
+      charts.global.destroy();
+      charts.global = null;
+    }
+    const ctx = document.getElementById('globalTrendChart').getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    return;
+  }
+
+  const totalPoints = combined.reduce((sum, s) => sum + s.points.length, 0);
+  const names = included.map(x => `분석기 ${x.idx}(${x.name})`).join(', ');
+  summary.innerHTML = `포함된 분석기: ${names}<br>종합 선 개수: ${combined.length}개<br>종합 데이터 점 수: ${totalPoints}개`;
+
+  drawCombinedTrend(combined);
+
+  const rel = computeCombinedCorrelation(combined);
+  if(!rel.length){
+    corr.innerHTML = '상관 관계 없음';
+  } else {
+    let html = '';
+    rel.forEach((v, i) => {
+      html += `${i+1}) ${v.a} ↔ ${v.b}<br>`;
+      html += `r=${v.r.toFixed(2)}<br><br>`;
+    });
+    corr.innerHTML = html;
+  }
+}
+function buildFilteredData(idx){
+  const s = getState(idx);
+  const start = document.getElementById(`startDate-${idx}`).value;
+  const end = document.getElementById(`endDate-${idx}`).value;
+  const startDate = start ? new Date(start) : null;
+  const endDate = end ? new Date(end) : null;
+
+  return s.rawData.filter(d => {
+    const okPort = s.selectedPorts.size === 0 || s.selectedPorts.has(clean(d.포트));
+    const okTopic = s.selectedTopics.size === 0 || s.selectedTopics.has(clean(d.포트) + '||' + clean(d.주제));
+    const rowDate = parseLabelToDate(d.날짜);
+    const okDate = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
+    return okPort && okTopic && okDate;
+  });
+}
+
+function drawTrend(idx, data){
+  const canvas = document.getElementById(`trendChart-${idx}`);
+  if(charts[idx]){
+    charts[idx].destroy();
+    charts[idx] = null;
+  }
+  if(!data.length){
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    return;
+  }
+
+  const topicMap = {};
+  data.forEach(d => {
+    const key = d.포트 + '||' + d.주제;
+    if(!topicMap[key]) topicMap[key] = [];
+    topicMap[key].push({ x: d.날짜, y: d.값 });
+  });
+
+  const labels = [...new Set(data.map(x => x.날짜))];
+  const datasets = Object.keys(topicMap).map((k, i) => ({
+    label: k.replace('||', ' - '),
+    data: labels.map(l => {
+      const found = topicMap[k].find(v => v.x === l);
+      return found ? found.y : null;
+    }),
+    borderWidth: 2,
+    tension: 0.25,
+    pointRadius: 2,
+    spanGaps: true
+  }));
+
+  charts[idx] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom' }
+      },
+      scales: {
+        y: { beginAtZero: true },
+        x: {
+          ticks: {
+            callback: function(value){
+              const label = this.getLabelForValue(value);
+              return fmtTick(label, getState(idx).timeMode);
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function computeCorrelation(x, y){
+  if(x.length !== y.length || x.length < 2) return null;
+  const mx = x.reduce((a,b)=>a+b,0) / x.length;
+  const my = y.reduce((a,b)=>a+b,0) / y.length;
+  let num = 0, dx = 0, dy = 0;
+  for(let i=0;i<x.length;i++){
+    num += (x[i]-mx) * (y[i]-my);
+    dx += (x[i]-mx) ** 2;
+    dy += (y[i]-my) ** 2;
+  }
+  const den = Math.sqrt(dx * dy);
+  if(!den) return null;
+  return num / den;
+}
+
+function computeTrendRate(values){
+  if(values.length < 2) return 0;
+  return ((values.at(-1) - values[0]) / (Math.max(values[0], 1) * (values.length - 1))) * 100;
+}
+
+function renderInsight(idx, data){
+  const el = document.getElementById(`insight-${idx}`);
+  if(!data.length){
+    el.textContent = '데이터 없음';
+    return;
+  }
+
+  const groups = {};
+  data.forEach(d => {
+    const k = d.포트 + '||' + d.주제;
+    if(!groups[k]) groups[k] = [];
+    groups[k].push(d);
+  });
+
+  const arrs = Object.values(groups);
+  let html = '';
+
+  html += '<b>1. 추세 분석</b><br><br>';
+  arrs.forEach((arr, i) => {
+    const values = arr.map(x => x.값);
+    const rate = computeTrendRate(values).toFixed(1);
+    html += `${i+1}) ${arr[0].주제 || '(빈 주제)'}<br>`;
+    html += `최근 평균 증가율: ${rate}%<br>`;
+    html += `기간 수 기준: ${values.length}개<br>`;
+    html += `→ ${Number(rate) > 0 ? '증가' : '감소/정체'} 추세<br><br>`;
+  });
+
+  html += '<b>2. 최대·최소 분석</b><br><br>';
+  arrs.forEach((arr, i) => {
+    const vals = arr.map(x => x.값);
+    html += `${i+1}) ${arr[0].주제 || '(빈 주제)'}<br>`;
+    html += `최고값: ${Math.max(...vals)}<br>`;
+    html += `최저값: ${Math.min(...vals)}<br>`;
+    html += `변동폭: ${(Math.max(...vals) - Math.min(...vals)).toFixed(1)}<br><br>`;
+  });
+
+  html += '<b>3. 이상 탐지</b><br>기준: 평균 × 2 초과 값을 급증으로 표기<br><br>';
+  arrs.forEach((arr, i) => {
+    const avg = arr.reduce((a,b)=>a+b.값,0) / arr.length;
+    const hit = arr.find(x => x.값 > avg * 2);
+    html += `${i+1}) ${arr[0].주제 || '(빈 주제)'}<br>`;
+    if(hit){
+      html += `→ ${hit.날짜}<br>`;
+      html += `급증: 평균 대비 +${(((hit.값 - avg) / Math.max(avg,1)) * 100).toFixed(0)}%<br><br>`;
+    } else {
+      html += '→ 이상값 없음<br><br>';
+    }
+  });
+
+  html += '<b>4. 시간 패턴 분석</b><br><br>';
+  arrs.forEach((arr, i) => {
+    const am = arr.filter(x => x.날짜.includes('(오전)'));
+    const pm = arr.filter(x => x.날짜.includes('(오후)'));
+    const amAvg = am.reduce((a,b)=>a+b.값,0) / Math.max(am.length,1);
+    const pmAvg = pm.reduce((a,b)=>a+b.값,0) / Math.max(pm.length,1);
+    const t = pmAvg > amAvg ? '증가' : pmAvg < amAvg ? '감소' : '같음';
+    html += `${i+1}) ${arr[0].주제 || '(빈 주제)'} → 오후 시간대 ${t}<br><br>`;
+  });
+
+  html += '<b>5. 변수 간 상관 분석</b><br>피어슨 상관 |r| ≥ 0.7만 표시<br><br>';
+  if(arrs.length < 2){
+    html += '상관 분석 대상이 충분하지 않습니다.';
+  } else {
+    const rel = [];
+    for(let i=0;i<arrs.length;i++){
+      for(let j=i+1;j<arrs.length;j++){
+        const minLen = Math.min(arrs[i].length, arrs[j].length);
+        const x = arrs[i].slice(0,minLen).map(v => v.값);
+        const y = arrs[j].slice(0,minLen).map(v => v.값);
+        const r = computeCorrelation(x, y);
+        if(r !== null && Math.abs(r) >= 0.7){
+          rel.push({ a: arrs[i][0].주제, b: arrs[j][0].주제, r });
+        }
+      }
+    }
+    if(!rel.length){
+      html += '상관 관계 없음';
+    } else {
+      rel.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+      rel.forEach((v, i) => {
+        html += `${i+1}) ${v.a} ↔ ${v.b}<br>`;
+        html += `r=${v.r.toFixed(2)}<br><br>`;
+      });
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+function detectOutlier(idx, data){
+  const el = document.getElementById(`outlier-${idx}`);
+  if(!data.length){
+    el.textContent = '없음';
+    return;
+  }
+
+  const groups = {};
+  data.forEach(d => {
+    const k = d.포트 + '||' + d.주제;
+    if(!groups[k]) groups[k] = [];
+    groups[k].push(d);
+  });
+
+  const blocks = [];
+  Object.keys(groups).forEach(k => {
+    const vals = groups[k];
+    const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+    const variance = vals.reduce((a,b)=>a+(b-avg)**2,0) / vals.length;
+    const std = Math.sqrt(variance);
+    const sorted = [...vals].sort((a,b)=>a-b);
+    const q1 = sorted[Math.floor((sorted.length - 1) * 0.25)];
+    const q3 = sorted[Math.floor((sorted.length - 1) * 0.75)];
+    const iqr = q3 - q1;
+    const upper = q3 + 1.5 * iqr;
+    const lower = q1 - 1.5 * iqr;
+    const name = k.replace('||', ' - ');
+    const hits = data.filter(d => (d.포트 + '||' + d.주제) === k && (d.값 > avg + 2*std || d.값 > upper || d.값 < lower));
+    if(hits.length){
+      blocks.push(`<b>${name}</b><br>${hits.slice(0,4).map(h => `${h.날짜} / ${h.값}`).join('<br>')}<br><br>`);
+    }
+  });
+
+  el.innerHTML = blocks.length ? blocks.join('') : '이상값 없음';
+}
+
+function renderTable(idx, data){
+  const s = getState(idx);
+  s.currentTableData = data;
+  const btns = document.getElementById(`tableBtns-${idx}`);
+  const area = document.getElementById(`topicTableArea-${idx}`);
+  btns.innerHTML = `<button class="ghost" data-key="all">모두보기</button>` + [...s.selectedTopics].map(t => {
+    const topic = t.includes('||') ? t.split('||')[1] : t;
+    return `<button class="ghost" data-key="${topic}">${topic || '(빈 주제)'}</button>`;
+  }).join('');
+  btns.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.dataset.key === 'all'){
+        showAllTable(idx);
+      } else {
+        showTopicTable(idx, btn.dataset.key);
+      }
+    });
+  });
+  area.innerHTML = '<div class="status">표를 열어 보세요.</div>';
+}
+
+function showTopicTable(idx, topic){
+  const data = getState(idx).currentTableData.filter(x => x.주제 === topic);
+  renderTableArea(idx, data);
+}
+
+function showAllTable(idx){
+  renderTableArea(idx, getState(idx).currentTableData);
+}
+
+function renderTableArea(idx, data){
+  const area = document.getElementById(`topicTableArea-${idx}`);
+  if(!data.length){
+    area.innerHTML = '<div class="status">데이터 없음</div>';
+    return;
+  }
+  let html = '<table><tr>';
+  Object.keys(data[0]).forEach(k => html += `<th>${k}</th>`);
+  html += '</tr>';
+  data.forEach(r => {
+    html += '<tr>';
+    Object.values(r).forEach(v => html += `<td>${v}</td>`);
+    html += '</tr>';
+  });
+  html += '</table>';
+  area.innerHTML = html;
+}
+
+function renderTableArea(idx, data){
+  const area = document.getElementById(`topicTableArea-${idx}`);
+  if(!data.length){
+    area.innerHTML = '<div class="status">데이터 없음</div>';
+    return;
+  }
+  let html = '<table><tr>';
+  Object.keys(data[0]).forEach(k => html += `<th>${k}</th>`);
+  html += '</tr>';
+  data.forEach(r => {
+    html += '<tr>';
+    Object.values(r).forEach(v => html += `<td>${v}</td>`);
+    html += '</tr>';
+  });
+  html += '</table>';
+  area.innerHTML = html;
+}
+
+
+function getAnalyzerName(idx){
+  const raw = document.getElementById(`userName-${idx}`)?.value?.trim();
+  return raw || '이름없음';
+}
+
+function getSeriesLabel(idx, row){
+  return `${getAnalyzerName(idx)}-${row.포트}-${row.주제}`;
+}
+
+function buildCombinedSeries(){
+  const combined = [];
+  const included = [];
+  for(let idx = 1; idx <= 3; idx++){
+    const s = getState(idx);
+    if(!s.rawData.length || s.selectedPorts.size === 0 || s.selectedTopics.size === 0) continue;
+    const filtered = buildFilteredData(idx);
+    if(!filtered.length) continue;
+    included.push({ idx, name: getAnalyzerName(idx), count: filtered.length });
+    const groups = {};
+    filtered.forEach(d => {
+      const key = getSeriesLabel(idx, d);
+      if(!groups[key]) groups[key] = [];
+      groups[key].push({ x: d.날짜, y: d.값 });
+    });
+    Object.keys(groups).forEach(key => {
+      combined.push({
+        label: key,
+        points: groups[key]
+      });
+    });
+  }
+  return { combined, included };
+}
+
+function alignSeriesByDate(seriesA, seriesB){
+  const mapA = new Map(seriesA.points.map(p => [p.x, p.y]));
+  const mapB = new Map(seriesB.points.map(p => [p.x, p.y]));
+  const common = [...mapA.keys()].filter(k => mapB.has(k));
+  common.sort((a, b) => {
+    const da = parseLabelToDate(a);
+    const db = parseLabelToDate(b);
+    return (da?.getTime?.() || 0) - (db?.getTime?.() || 0);
+  });
+  const x = common.map(k => mapA.get(k));
+  const y = common.map(k => mapB.get(k));
+  return { x, y, common };
+}
+
+function computeCombinedCorrelation(combined){
+  const rel = [];
+  for(let i=0;i<combined.length;i++){
+    for(let j=i+1;j<combined.length;j++){
+      const { x, y, common } = alignSeriesByDate(combined[i], combined[j]);
+      if(common.length < 2) continue;
+      const r = computeCorrelation(x, y);
+      if(r !== null && Math.abs(r) >= 0.7){
+        rel.push({
+          a: combined[i].label,
+          b: combined[j].label,
+          r
+        });
+      }
+    }
+  }
+  rel.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+  return rel;
+}
+
+function drawCombinedTrend(combined){
+  const canvas = document.getElementById('globalTrendChart');
+  if(charts.global){
+    charts.global.destroy();
+    charts.global = null;
+  }
+  if(!combined.length){
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    return;
+  }
+  const labels = [...new Set(combined.flatMap(s => s.points.map(p => p.x)))];
+  labels.sort((a, b) => {
+    const da = parseLabelToDate(a);
+    const db = parseLabelToDate(b);
+    return (da?.getTime?.() || 0) - (db?.getTime?.() || 0);
+  });
+  const datasets = combined.map((s, i) => ({
+    label: s.label,
+    data: labels.map(l => {
+      const found = s.points.find(p => p.x === l);
+      return found ? found.y : null;
+    }),
+    borderWidth: 2,
+    tension: 0.25,
+    pointRadius: 2,
+    spanGaps: true
+  }));
+  charts.global = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom' }
+      },
+      scales: {
+        y: { beginAtZero: true },
+        x: {
+          ticks: {
+            callback: function(value){
+              const label = this.getLabelForValue(value);
+              return fmtTick(label, globalTimeMode);
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+function downloadCanvasPNG(canvasId, fileName){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return false;
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = fileName;
+  link.click();
+  return true;
+}
+
+function hasChartData(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return false;
+  const ctx = canvas.getContext('2d');
+  try{
+    const px = ctx.getImageData(0, 0, Math.min(10, canvas.width || 10), Math.min(10, canvas.height || 10)).data;
+    return Array.from(px).some(v => v !== 0);
+  }catch(e){
+    return false;
+  }
+}
+
+function getAnalyzerName(idx){
+  const name = document.getElementById(`userName-${idx}`).value.trim();
+  return name || '이름없음';
+}
+
+function buildPdfSectionForAnalyzer(idx){
+  const name = getAnalyzerName(idx);
+  const period = document.getElementById(`periodInfo-${idx}`).textContent.trim();
+  const deviceInfo = document.getElementById(`deviceInfo-${idx}`).innerHTML || '<div>장비 정보 없음</div>';
+  const outlier = document.getElementById(`outlier-${idx}`).innerHTML || '이상값 없음';
+  const insight = document.getElementById(`insight-${idx}`).innerHTML || '분석 결과 없음';
+  const chartImg = hasChartData(`trendChart-${idx}`) ? `<img class="report-img" src="${document.getElementById(`trendChart-${idx}`).toDataURL('image/png')}" />` : '<div class="report-empty">그래프 없음</div>';
+
+  return `
+    <div class="report-section">
+      <h2>분석기${idx} 이름: ${name}</h2>
+      <div class="report-sub">기간: ${period}</div>
+      <h3>장비</h3>
+      <div class="report-grid">${deviceInfo}</div>
+      <h3>그래프</h3>
+      ${chartImg}
+      <h3>이상탐지</h3>
+      <div class="report-box">${outlier}</div>
+      <h3>상관분석</h3>
+      <div class="report-box">${insight}</div>
+    </div>
+  `;
+}
+
+function buildGlobalPdfSection(){
+  const summary = document.getElementById('globalSummary').innerHTML || '종합 분석 전입니다.';
+  const correlation = document.getElementById('globalCorrelation').innerHTML || '상관 결과 없음';
+  const chartImg = hasChartData('globalTrendChart') ? `<img class="report-img" src="${document.getElementById('globalTrendChart').toDataURL('image/png')}" />` : '<div class="report-empty">종합 그래프 없음</div>';
+
+  return `
+    <div class="report-section">
+      <h2>종합분석</h2>
+      <div class="report-box">${summary}</div>
+      <h3>종합그래프</h3>
+      ${chartImg}
+      <h3>Pearson 결과</h3>
+      <div class="report-box">${correlation}</div>
+    </div>
+  `;
+}
+
+function buildPdfReportHtml(){
+  let html = `
+    <div class="report-title">젠트라 데이터 분석기</div>
+    <div class="report-note">분석기별 결과와 종합분석 결과를 함께 정리한 출력용 보고서입니다.</div>
+  `;
+  for(let i=1;i<=3;i++){
+    const s = getState(i);
+    if(!s.rawData.length) continue;
+    html += buildPdfSectionForAnalyzer(i);
+  }
+  html += buildGlobalPdfSection();
+  return html;
+}
+
+async function exportAnalysisPdf(){
+  if(typeof html2pdf === 'undefined'){
+    alert('PDF 라이브러리를 불러오지 못했습니다.');
+    return;
+  }
+  const report = document.getElementById('pdfReport');
+  report.innerHTML = buildPdfReportHtml();
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .report-title{font-size:28px;font-weight:700;margin-bottom:8px}
+    .report-note{font-size:13px;color:#666;margin-bottom:18px}
+    .report-section{page-break-inside:avoid;margin-bottom:26px;padding:18px;border:1px solid #ddd;border-radius:14px}
+    .report-section h2{margin:0 0 8px;font-size:22px}
+    .report-section h3{margin:16px 0 8px;font-size:16px}
+    .report-sub{font-size:13px;color:#555;margin-bottom:10px}
+    .report-box{font-size:12px;line-height:1.5;white-space:normal}
+    .report-grid{font-size:12px;line-height:1.5}
+    .report-img{width:100%;max-width:820px;border:1px solid #ddd;border-radius:10px;display:block}
+    .report-empty{font-size:13px;color:#666;padding:10px 0}
+  `;
+  report.appendChild(style);
+
+  await html2pdf().set({
+    margin: 8,
+    filename: '젠트라_데이터_분석기_결과.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'legacy'] }
+  }).from(report).save();
+
+  style.remove();
+}
+
+async function downloadAvailableCharts(){
+  const list = [
+    { id: 'trendChart-1', name: '분석기1_그래프.png' },
+    { id: 'trendChart-2', name: '분석기2_그래프.png' },
+    { id: 'trendChart-3', name: '분석기3_그래프.png' },
+    { id: 'globalTrendChart', name: '종합그래프.png' }
+  ];
+  const available = list.filter(item => document.getElementById(item.id) && hasChartData(item.id));
+
+  if(!available.length){
+    alert('다운로드할 그래프가 없습니다.');
+    return;
+  }
+
+  if(available.length === 1){
+    const item = available[0];
+    const canvas = document.getElementById(item.id);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = item.name;
+    a.click();
+    return;
+  }
+
+  if(typeof JSZip === 'undefined'){
+    alert('이미지 압축 도구를 불러오지 못했습니다.');
+    return;
+  }
+
+  const zip = new JSZip();
+  for(const item of available){
+    const canvas = document.getElementById(item.id);
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1];
+    zip.file(item.name, base64, { base64: true });
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '젠트라_그래프_이미지.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function runGlobalAnalysis(){
+  const { combined, included } = buildCombinedSeries();
+  const summary = document.getElementById('globalSummary');
+  const corr = document.getElementById('globalCorrelation');
+
+  if(!included.length){
+    summary.textContent = '종합 분석에 사용할 데이터가 없습니다. 각 분석기에서 파일 업로드와 포트/주제 선택을 먼저 해주세요.';
+    corr.textContent = '상관분석 결과가 없습니다.';
+    if(charts.global){
+      charts.global.destroy();
+      charts.global = null;
+    }
+    const ctx = document.getElementById('globalTrendChart').getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    return;
+  }
+
+  const totalPoints = combined.reduce((sum, s) => sum + s.points.length, 0);
+  const names = included.map(x => `분석기 ${x.idx}(${x.name})`).join(', ');
+  summary.innerHTML = `포함된 분석기: ${names}<br>종합 선 개수: ${combined.length}개<br>종합 데이터 점 수: ${totalPoints}개`;
+
+  drawCombinedTrend(combined);
+
+  const rel = computeCombinedCorrelation(combined);
+  if(!rel.length){
+    corr.innerHTML = '상관 관계 없음';
+  } else {
+    let html = '';
+    rel.forEach((v, i) => {
+      html += `${i+1}) ${v.a} ↔ ${v.b}<br>`;
+      html += `r=${v.r.toFixed(2)}<br><br>`;
+    });
+    corr.innerHTML = html;
+  }
+}
+function buildFilteredData(idx){
+  const s = getState(idx);
+  const start = document.getElementById(`startDate-${idx}`).value;
+  const end = document.getElementById(`endDate-${idx}`).value;
+  const startDate = start ? new Date(start) : null;
+  const endDate = end ? new Date(end) : null;
+
+  return s.rawData.filter(d => {
+    const okPort = s.selectedPorts.size === 0 || s.selectedPorts.has(clean(d.포트));
+    const okTopic = s.selectedTopics.size === 0 || s.selectedTopics.has(clean(d.포트) + '||' + clean(d.주제));
+    const rowDate = parseLabelToDate(d.날짜);
+    const okDate = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
+    return okPort && okTopic && okDate;
+  });
+}
+
+function runAnalysis(idx){
+  const s = getState(idx);
+  if(!s.rawData.length){
+    alert(`분석기 ${idx}: 먼저 파일을 업로드하세요.`);
+    return;
+  }
+  if(s.selectedPorts.size === 0 || s.selectedTopics.size === 0){
+    alert(`분석기 ${idx}: 포트와 주제를 모두 선택해주세요.`);
+    return;
+  }
+  updateExecTitle(idx);
+  const filtered = buildFilteredData(idx);
+  drawTrend(idx, filtered);
+  renderInsight(idx, filtered);
+  renderDevice(idx, filtered);
+  renderTable(idx, filtered);
+}
+
+function bindEvents(idx){
+  const fileInput = document.getElementById(`fileInput-${idx}`);
+  const userName = document.getElementById(`userName-${idx}`);
+  const periodInfo = document.getElementById(`periodInfo-${idx}`);
+  const startEl = document.getElementById(`startDate-${idx}`);
+  const endEl = document.getElementById(`endDate-${idx}`);
+  const insight = document.getElementById(`insight-${idx}`);
+  const tableDetail = document.getElementById(`tableDetail-${idx}`);
+
+  document.getElementById(`loadBtn-${idx}`).addEventListener('click', () => fileInput.click());
+  document.getElementById(`nameConfirm-${idx}`).addEventListener('click', () => updateExecTitle(idx));
+  document.getElementById(`runBtn-${idx}`).addEventListener('click', () => runAnalysis(idx));
+  document.getElementById(`resetBtn-${idx}`).addEventListener('click', resetPanel);
+  document.getElementById(`resetBtn2-${idx}`).addEventListener('click', resetPanel);
+  document.getElementById(`timeYear-${idx}`).addEventListener('click', () => { getState(idx).timeMode = 'year'; runAnalysis(idx); });
+  document.getElementById(`timeMonth-${idx}`).addEventListener('click', () => { getState(idx).timeMode = 'month'; runAnalysis(idx); });
+  document.getElementById(`timeDay-${idx}`).addEventListener('click', () => { getState(idx).timeMode = 'day'; runAnalysis(idx); });
+  document.getElementById(`timeHour-${idx}`).addEventListener('click', () => { getState(idx).timeMode = 'hour'; runAnalysis(idx); });
+  document.getElementById(`toggleInsight-${idx}`).addEventListener('click', () => insight.classList.toggle('collapse'));
+  document.getElementById(`toggleTable-${idx}`).addEventListener('click', () => tableDetail.classList.toggle('collapse'));
+
+  document.getElementById('globalRunBtn').addEventListener('click', runGlobalAnalysis);
+document.getElementById('globalTimeYear').addEventListener('click', () => { globalTimeMode = 'year'; runGlobalAnalysis(); });
+document.getElementById('globalTimeMonth').addEventListener('click', () => { globalTimeMode = 'month'; runGlobalAnalysis(); });
+document.getElementById('globalTimeDay').addEventListener('click', () => { globalTimeMode = 'day'; runGlobalAnalysis(); });
+document.getElementById('globalTimeHour').addEventListener('click', () => { globalTimeMode = 'hour'; runGlobalAnalysis(); });
+
+  function resetPanel(){
+    const s = getState(idx);
+    s.rawData = [];
+    s.colInfo = [];
+    s.selectedPorts.clear();
+    s.selectedTopics.clear();
+    s.currentTableData = [];
+    s.portColors = {};
+    document.getElementById(`ports-${idx}`).innerHTML = '';
+    document.getElementById(`topics-${idx}`).innerHTML = '';
+    document.getElementById(`deviceInfo-${idx}`).innerHTML = '';
+    document.getElementById(`periodInfo-${idx}`).textContent = '파일을 업로드하면 기간이 표시됩니다.';
+    document.getElementById(`outlier-${idx}`).textContent = '아직 분석 전입니다.';
+    document.getElementById(`insight-${idx}`).innerHTML = '';
+    document.getElementById(`execTitle-${idx}`).textContent = '이름없음';
+    document.getElementById(`tableBtns-${idx}`).innerHTML = '';
+    document.getElementById(`topicTableArea-${idx}`).innerHTML = '';
+    document.getElementById(`startDate-${idx}`).value = '';
+    document.getElementById(`endDate-${idx}`).value = '';
+    document.getElementById(`startDate-${idx}`).removeAttribute('min');
+    document.getElementById(`startDate-${idx}`).removeAttribute('max');
+    document.getElementById(`endDate-${idx}`).removeAttribute('min');
+    document.getElementById(`endDate-${idx}`).removeAttribute('max');
+    userName.value = '';
+    fileInput.value = '';
+    if(charts[idx]){
+      charts[idx].destroy();
+      charts[idx] = null;
+    }
+    const ctx = document.getElementById(`trendChart-${idx}`).getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    insight.classList.add('collapse');
+    tableDetail.classList.add('collapse');
+    document.getElementById('globalSummary').textContent = '아직 종합 분석 전입니다.';
+    document.getElementById('globalCorrelation').textContent = '아직 종합 분석 전입니다.';
+    if(charts.global){
+      charts.global.destroy();
+      charts.global = null;
+    }
+    const gctx = document.getElementById('globalTrendChart').getContext('2d');
+    gctx.clearRect(0,0,gctx.canvas.width,gctx.canvas.height);
+  }
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = x => {
+      const wb = XLSX.read(new Uint8Array(x.target.result), { type:'array' });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const parsed = parseExcel(firstSheet);
+      const s = getState(idx);
+      s.rawData = parsed.result;
+      s.colInfo = parsed.colInfo;
+      s.selectedPorts = new Set();
+      s.selectedTopics = new Set();
+      s.currentTableData = [];
+      s.portColors = {};
+      renderPorts(idx);
+      renderTopics(idx);
+      updatePeriod(idx);
+      setDateLimit(idx);
+      updateExecTitle(idx);
+      document.getElementById(`deviceInfo-${idx}`).innerHTML = '';
+      document.getElementById(`outlier-${idx}`).textContent = '아직 분석 전입니다.';
+      document.getElementById(`insight-${idx}`).innerHTML = '';
+      document.getElementById(`tableBtns-${idx}`).innerHTML = '';
+      document.getElementById(`topicTableArea-${idx}`).innerHTML = '';
+      if(charts[idx]){
+        charts[idx].destroy();
+        charts[idx] = null;
+      }
+      const ctx = document.getElementById(`trendChart-${idx}`).getContext('2d');
+      ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+      userName.value = userName.value.trim();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  startEl.addEventListener('change', () => {
+    if(!startEl.value) return;
+    const d = new Date(startEl.value);
+    d.setMinutes(d.getMinutes() < 30 ? 0 : 30, 0, 0);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    startEl.value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  });
+
+  endEl.addEventListener('change', () => {
+    if(!endEl.value) return;
+    const d = new Date(endEl.value);
+    d.setMinutes(d.getMinutes() < 30 ? 0 : 30, 0, 0);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    endEl.value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  });
+}
+
+for(let i=1;i<=3;i++){
+  createState(i);
+  renderPanel(i);
+}
+for(let i=1;i<=3;i++){
+  bindEvents(i);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const imgBtn=document.getElementById('globalDownloadImages');
+  const pdfBtn=document.getElementById('globalDownloadPdf');
+
+  if(imgBtn) imgBtn.addEventListener('click', () => downloadAvailableCharts());
+  if(pdfBtn) pdfBtn.addEventListener('click', () => exportAnalysisPdf());
+});
+
+</script>
+</body>
+</html>
